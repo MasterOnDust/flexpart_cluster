@@ -19,7 +19,7 @@
 ! along with FLEXPART.  If not, see <http://www.gnu.org/licenses/>.   *
 !**********************************************************************
 
-subroutine clustering(xl,yl,zl,n,xclust,yclust,zclust,fclust,rms, &
+subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
        rmsclust,zrms)
   !                      i  i  i  i   o      o      o      o     o
   !   o      o
@@ -54,18 +54,26 @@ subroutine clustering(xl,yl,zl,n,xclust,yclust,zclust,fclust,rms, &
   !                                                                            *
   !*****************************************************************************
 
-  use par_mod
-
   implicit none
+  
+  
 
-  integer :: n,i,j,l,nclust(maxpart),numb(ncluster),ncl
+  integer,parameter :: maxpart=100000
+  real,parameter :: pi=3.14159265, r_earth=6.371e6, r_air=287.05, ga=9.81
+  real,parameter :: cpa=1004.6, kappa=0.286, pi180=pi/180., vonkarman=0.4
+
+  
+  integer :: n,i,j,l,nclust(maxpart),ncl,ncluster
+  integer :: numb(ncluster)
   real :: xl(n),yl(n),zl(n),xclust(ncluster),yclust(ncluster),x,y,z
   real :: zclust(ncluster),distance2,distances,distancemin,rms,rmsold
   real :: xav(ncluster),yav(ncluster),zav(ncluster),fclust(ncluster)
   real :: rmsclust(ncluster)
   real :: zdist,zrms
-
-
+    
+!Cf2py intent(in) xl, yl, zl, n, ncluster
+!Cf2py intent(out) xclust,yclust,zclust,fclust,rms, rmsclust,zrms
+!Cf2py depend(ncluster) xclust,yclust,zclust,fclust,rmsclust
 
   if (n.lt.ncluster) return
   rmsold=-5.
@@ -208,3 +216,59 @@ subroutine clustering(xl,yl,zl,n,xclust,yclust,zclust,fclust,rms, &
   if (zrms.gt.0.) zrms=sqrt(zrms/real(n))
 
 end subroutine clustering
+
+
+function distance2(rlat1,rlon1,rlat2,rlon2)
+
+  !$$$  SUBPROGRAM DOCUMENTATION BLOCK
+  !
+  ! SUBPROGRAM:  GCDIST     COMPUTE GREAT CIRCLE DISTANCE
+  !   PRGMMR: IREDELL       ORG: W/NMC23       DATE: 96-04-10
+  !
+  ! ABSTRACT: THIS SUBPROGRAM COMPUTES GREAT CIRCLE DISTANCE
+  !      BETWEEN TWO POINTS ON THE EARTH. COORDINATES ARE GIVEN IN RADIANS!
+  !
+  ! PROGRAM HISTORY LOG:
+  !   96-04-10  IREDELL
+  !
+  ! USAGE:    ...GCDIST(RLAT1,RLON1,RLAT2,RLON2)
+  !
+  !   INPUT ARGUMENT LIST:
+  !rlat1    - REAL LATITUDE OF POINT 1 IN RADIANS
+  !rlon1    - REAL LONGITUDE OF POINT 1 IN RADIANS
+  !rlat2    - REAL LATITUDE OF POINT 2 IN RADIANS
+  !rlon2    - REAL LONGITUDE OF POINT 2 IN RADIANS
+  !
+  !   OUTPUT ARGUMENT LIST:
+  !distance2   - REAL GREAT CIRCLE DISTANCE IN KM
+  !
+  ! ATTRIBUTES:
+  !   LANGUAGE: Fortran 90
+  !
+  !$$$
+
+  use par_mod, only: dp
+
+  implicit none
+
+  real                    :: rlat1,rlon1,rlat2,rlon2,distance2
+  real(kind=dp)           :: clat1,clat2,slat1,slat2,cdlon,crd
+  real(kind=dp),parameter :: rerth=6.3712e6_dp
+  real(kind=dp),parameter :: pi=3.14159265358979_dp
+
+  if ((abs(rlat1-rlat2).lt.0.0003).and. &
+       (abs(rlon1-rlon2).lt.0.0003)) then
+    distance2=0.0_dp
+  else
+
+  ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    clat1=cos(real(rlat1,kind=dp))
+    slat1=sin(real(rlat1,kind=dp))
+    clat2=cos(real(rlat2,kind=dp))
+    slat2=sin(real(rlat2,kind=dp))
+    cdlon=cos(real(rlon1-rlon2,kind=dp))
+    crd=slat1*slat2+clat1*clat2*cdlon
+    distance2=real(rerth*acos(crd)/1000.0_dp)
+  endif
+  ! - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+end function distance2
