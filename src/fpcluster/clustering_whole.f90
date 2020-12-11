@@ -19,7 +19,7 @@
 ! along with FLEXPART.  If not, see <http://www.gnu.org/licenses/>.   *
 !**********************************************************************
 
-subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
+subroutine clustering_whole(xl,yl,zl,n,ntime,ncluster,xclust,yclust,zclust,fclust,rms, &
        rmsclust,zrms)
   !                      i  i  i  i   o      o      o      o     o
   !   o      o
@@ -53,7 +53,8 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
   ! xl,yl,zl        particle positions                                         *
   !                                                                            *
   !*****************************************************************************
-
+  ! In the R Code  the input ot the distance calculation is a matrix which has one 
+  ! row for time along the trajectory and one column for each trajectory.  
   implicit none
   
   
@@ -62,12 +63,12 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
   real,parameter :: pi=3.14159265, r_earth=6.371e6, r_air=287.05, ga=9.81
   real,parameter :: cpa=1004.6, kappa=0.286, pi180=pi/180., vonkarman=0.4
 
-  
-  integer :: n,i,j,l,nclust(maxpart),ncl,ncluster
+  integer :: ntime
+  integer :: n,i,j,l,t,nclust(maxpart),ncl,ncluster
   integer :: numb(ncluster)
-  real :: xl(n),yl(n),zl(n),xclust(ncluster),yclust(ncluster),x,y,z
-  real :: zclust(ncluster),distance2,distances,distancemin,rms,rmsold
-  real :: xav(ncluster),yav(ncluster),zav(ncluster),fclust(ncluster)
+  real :: xl(ntime,n),yl(ntime,n),zl(ntime,n),xclust(ntime,ncluster),yclust(ntime,ncluster),x(ntime),y(ntime),z(ntime)
+  real :: zclust(ntime,ncluster),distance2,distances,distancemin,rms,rmsold
+  real :: xav(ntime,ncluster),yav(ntime,ncluster),zav(ntime,ncluster),fclust(ncluster)
   real :: rmsclust(ncluster)
   real :: zdist,zrms
     
@@ -78,9 +79,11 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
   !*******************************************************
 
   do i=1,n
-    nclust(i)=i
-    xl(i)=xl(i)*pi180
-    yl(i)=yl(i)*pi180
+    do t=1,ntime
+      nclust(i)=i
+      xl(t,i)=xl(t,i)*pi180
+      yl(t,i)=yl(t,i)*pi180
+    end do
   end do
 
 
@@ -88,9 +91,11 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
   !*********************************
 
   do j=1,ncluster
-    zclust(j)=0.
-    xclust(j)=xl(j*n/ncluster)
-    yclust(j)=yl(j*n/ncluster)
+    do t=1,ntime
+      zclust(t,j)=0.
+      xclust(t,j)=xl(t,j*n/ncluster)
+      yclust(t,j)=yl(t,j*n/ncluster)
+    end do
   end do
 
 
@@ -107,11 +112,14 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
     do i=1,n
       distancemin=10.**10.
       do j=1,ncluster
-        distances=distance2(yl(i),xl(i),yclust(j),xclust(j))
-        if (distances.lt.distancemin) then
-          distancemin=distances
-          ncl=j
-        endif
+        distances=0
+        do t=1,ntime 
+          distances=distances+distance2(yl(t,i),xl(t,i),yclust(t,j),xclust(t,j))
+          if (distances.lt.distancemin) then
+            distancemin=distances
+            ncl=j 
+          endif
+        end do
       end do
       nclust(i)=ncl
     end do
@@ -122,19 +130,24 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
   !*****************************************************************************
 
     do j=1,ncluster
-      xav(j)=0.
-      yav(j)=0.
-      zav(j)=0.
-      rmsclust(j)=0.
-      numb(j)=0
+      do t=1, ntime
+        xav(t,j)=0.
+        yav(t,j)=0.
+        zav(t,j)=0.
+        rmsclust(j)=0.
+        numb(j)=0
+      end do
     end do
     rms=0.
+    
 
     do i=1,n
+      distances=0.
       numb(nclust(i))=numb(nclust(i))+1
-      distances=distance2(yl(i),xl(i), &
-           yclust(nclust(i)),xclust(nclust(i)))
-
+      do t=1,ntime
+        distances=distances+distance2(yl(t,i),xl(t,i), &
+           yclust(ntime,nclust(i)),xclust(t,nclust(i)))
+      end do
   ! rms is the total rms of all particles
   ! rmsclust is the rms for a particular cluster
   !*********************************************
@@ -144,15 +157,17 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
 
   ! Calculate Cartesian 3D coordinates from longitude and latitude
   !***************************************************************
+      do t=1,ntime
 
-      x = cos(yl(i))*sin(xl(i))
-      y = -1.*cos(yl(i))*cos(xl(i))
-      z = sin(yl(i))
-      xav(nclust(i))=xav(nclust(i))+x
-      yav(nclust(i))=yav(nclust(i))+y
-      zav(nclust(i))=zav(nclust(i))+z
+        x(t) = cos(yl(t,i))*sin(xl(t,i))
+        y(t) = -1.*cos(yl(t,i))*cos(xl(t,i))
+        z(t) = sin(yl(t,i))
+        xav(t,nclust(i))=xav(t,nclust(i))+x(t)
+        yav(t,nclust(i))=yav(t,nclust(i))+y(t)
+        zav(t,nclust(i))=zav(t,nclust(i))+z(t)
+      end do
     end do
-
+    
     rms=sqrt(rms/real(n))
 
 
@@ -160,18 +175,21 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
   !************************************************
 
     do j=1,ncluster
-      if (numb(j).gt.0) then
-        rmsclust(j)=sqrt(rmsclust(j)/real(numb(j)))
-        xav(j)=xav(j)/real(numb(j))
-        yav(j)=yav(j)/real(numb(j))
-        zav(j)=zav(j)/real(numb(j))
+      do t=1, ntime
+        if (numb(j).gt.0) then
+          rmsclust(j)=sqrt(rmsclust(j)/real(numb(j)))
+          xav(t,j)=xav(t,j)/real(numb(j))
+          yav(t,j)=yav(t,j)/real(numb(j))
+          zav(t,j)=zav(t,j)/real(numb(j))
+        
 
-  ! Project the point back onto Earth's surface
-  !********************************************
+    ! Project the point back onto Earth's surface
+    !********************************************
 
-        xclust(j)=atan2(xav(j),-1.*yav(j))
-        yclust(j)=atan2(zav(j),sqrt(xav(j)*xav(j)+yav(j)*yav(j)))
-      endif
+          xclust(t,j)=atan2(xav(t,j),-1.*yav(t,j))
+          yclust(t,j)=atan2(zav(t,j),sqrt(xav(t,j)*xav(t,j)+yav(t,j)*yav(t,j)))
+        endif
+      end do
     end do
 
 
@@ -189,16 +207,20 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
   !*******************************************************
 
   do i=1,n
-    xl(i)=xl(i)/pi180
-    yl(i)=yl(i)/pi180
-    zclust(nclust(i))=zclust(nclust(i))+zl(i)
+    do t=1,ntime
+      xl(t,i)=xl(t,i)/pi180
+      yl(t,i)=yl(t,i)/pi180
+      zclust(t,nclust(i))=zclust(t,nclust(i))+zl(t,i)
+    end do
   end do
 
   do j=1,ncluster
-    xclust(j)=xclust(j)/pi180
-    yclust(j)=yclust(j)/pi180
-    if (numb(j).gt.0) zclust(j)=zclust(j)/real(numb(j))
-    fclust(j)=100.*real(numb(j))/real(n)
+    do t=1,ntime
+      xclust(t,j)=xclust(t,j)/pi180
+      yclust(t,j)=yclust(t,j)/pi180
+      if (numb(j).gt.0) zclust(t,j)=zclust(t,j)/real(numb(j))
+        fclust(j)=100.*real(numb(j))/real(n)
+    end do
   end do
 
   ! Determine total vertical RMS deviation
@@ -206,12 +228,15 @@ subroutine clustering(xl,yl,zl,n,ncluster,xclust,yclust,zclust,fclust,rms, &
 
   zrms=0.
   do i=1,n
-    zdist=zl(i)-zclust(nclust(i))
+    zdist=0.
+    do t=1,ntime
+      zdist=zdist+(zl(t,i)-zclust(t,nclust(i)))
+    end do
     zrms=zrms+zdist*zdist
   end do
   if (zrms.gt.0.) zrms=sqrt(zrms/real(n))
 
-end subroutine clustering
+end subroutine clustering_whole
 
 
 function distance2(rlat1,rlon1,rlat2,rlon2)
