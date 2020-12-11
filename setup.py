@@ -1,3 +1,4 @@
+import setuptools 
 from numpy.distutils.core import Extension
 from setuptools import find_packages
 

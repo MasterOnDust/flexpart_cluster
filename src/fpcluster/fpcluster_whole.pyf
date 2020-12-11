@@ -1,7 +1,7 @@
 !    -*- f90 -*-
 ! Note: the context of this file is case sensitive.
 
-python module fpcluster_whole ! in 
+python module clustering_whole ! in 
     interface  ! in :fpcluster_whole
         subroutine clustering_whole(xl,yl,zl,n,ntime,ncluster,xclust,yclust,zclust,fclust,rms,rmsclust,zrms) ! in :fpcluster_whole:clustering_whole.f90
             real dimension(ntime,n),intent(in) :: xl
