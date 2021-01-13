@@ -1,0 +1,131 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module clustering_whole ! in 
+    interface  ! in :fpcluster_whole
+        subroutine clustering_whole(xl,yl,zl,n,ntime,ncluster,xclust,yclust,zclust,fclust,rms,rmsclust,zrms) ! in :fpcluster_whole:clustering_whole.f90
+            real dimension(ntime,n),intent(in) :: xl
+            real dimension(ntime,n),intent(in),depend(ntime,n) :: yl
+            real dimension(ntime,n),intent(in),depend(ntime,n) :: zl
+            integer, optional,check(shape(xl,1)==n),depend(xl) :: n=shape(xl,1)
+            integer, optional,check(shape(xl,0)==ntime),depend(xl) :: ntime=shape(xl,0)
+            ! integer, optional,check(shape(xclust,1)==ncluster),depend(xclust) :: ncluster=shape(xclust,1)
+            integer, optional,intent(in) :: ncluster=5
+            real dimension(ntime,ncluster),intent(out),depend(ntime) :: xclust
+            real dimension(ntime,ncluster),intent(out),depend(ntime,ncluster) :: yclust
+            real dimension(ntime,ncluster),intent(out),depend(time,ncluster) :: zclust
+            real dimension(ncluster),intent(out),depend(ncluster) :: fclust
+            real intent(out):: rms
+            real dimension(ncluster),intent(out),depend(ncluster) :: rmsclust
+            real intent(out):: zrms
+        end subroutine clustering_whole
+        function distance2(rlat1,rlon1,rlat2,rlon2) ! in :fpcluster_whole:clustering_whole.f90
+            use par_mod, only: dp
+            real :: rlat1
+            real :: rlon1
+            real :: rlat2
+            real :: rlon2
+            real :: distance2
+        end function distance2
+        module par_mod ! in :fpcluster_whole:par_mod.f90
+            integer, parameter,optional :: dp=selected_real_kind(p=15)
+            integer, parameter,optional :: sp=selected_real_kind(6)
+            integer, parameter,optional,depend(sp) :: dep_prec=4
+            logical, parameter,optional :: lusekerneloutput=.true.
+            logical, parameter,optional :: lparticlecountoutput=.false.
+            integer, parameter,optional :: numpath=4
+            real, parameter,optional :: pi=3.14159265
+            real, parameter,optional :: r_earth=6371000.0
+            real, parameter,optional :: r_air=287.05
+            real, parameter,optional :: ga=9.81
+            real, parameter,optional :: cpa=1004.6
+            real, parameter,optional :: kappa=0.286
+            real, parameter,optional,depend(pi) :: pi180=0.017453292500000002
+            real, parameter,optional :: vonkarman=0.4
+            real, parameter,optional :: karman=0.4
+            real, parameter,optional :: href=15.0
+            real, parameter,optional :: convke=2.0
+            real, parameter,optional :: hmixmin=100.0
+            real, parameter,optional :: hmixmax=4500.0
+            real, parameter,optional :: turbmesoscale=0.16
+            real, parameter,optional :: d_trop=50.0
+            real, parameter,optional :: d_strat=0.1
+            real, parameter,optional :: rho_water=1000.0
+            real, parameter,optional :: incloud_ratio=6.2
+            real, parameter,optional :: xmwml=0.6220994475138121
+            real, parameter,optional :: ozonescale=60.0
+            real, parameter,optional :: pvcrit=2.0
+            integer, parameter,optional :: idiffnorm=10800
+            integer, parameter,optional,depend(idiffnorm) :: idiffmax=21600
+            integer, parameter,optional :: minstep=1
+            real, parameter,optional :: switchnorth=75.0
+            real, parameter,optional :: switchsouth=-75.0
+            integer, parameter,optional :: nxmax=361
+            integer, parameter,optional :: nymax=181
+            integer, parameter,optional :: nuvzmax=138
+            integer, parameter,optional :: nwzmax=138
+            integer, parameter,optional :: nzmax=138
+            integer, optional :: nxshift=0
+            integer, parameter,optional :: maxnests=0
+            integer, parameter,optional :: nxmaxn=0
+            integer, parameter,optional :: nymaxn=0
+            integer, parameter,optional,depend(nuvzmax) :: nconvlevmax=137
+            integer, parameter,optional,depend(nconvlevmax) :: na=138
+            integer, parameter,optional,depend(nxmax,nymax) :: jpack=261364
+            integer, parameter,optional,depend(jpack) :: jpunp=1045456
+            integer, parameter,optional :: maxageclass=1
+            integer, parameter,optional :: nclassunc=1
+            integer, parameter,optional :: maxreceptor=20
+            integer, parameter,optional :: maxpart=100000
+            integer, parameter,optional :: maxspec=1
+            real, parameter,optional :: minmass=0.0001
+            integer, parameter,optional :: maxwf=50000
+            integer, parameter,optional :: maxtable=1000
+            integer, parameter,optional :: numclass=13
+            integer, parameter,optional :: ni=11
+            integer, parameter,optional :: numwfmem=2
+            integer, parameter,optional :: maxxoh=72
+            integer, parameter,optional :: maxyoh=46
+            integer, parameter,optional :: maxzoh=7
+            integer, parameter,optional :: maxcolumn=3000
+            integer, parameter,optional :: maxrand=1000000
+            integer, parameter,optional :: ncluster=5
+            integer, parameter,optional :: unitpath=1
+            integer, parameter,optional :: unitcommand=1
+            integer, parameter,optional :: unitageclasses=1
+            integer, parameter,optional :: unitgrid=1
+            integer, parameter,optional :: unitavailab=1
+            integer, parameter,optional :: unitreleases=88
+            integer, parameter,optional :: unitpartout=93
+            integer, parameter,optional :: unitpartin=93
+            integer, parameter,optional :: unitflux=98
+            integer, parameter,optional :: unitouttraj=96
+            integer, parameter,optional :: unitvert=1
+            integer, parameter,optional :: unitoro=1
+            integer, parameter,optional :: unitpoin=1
+            integer, parameter,optional :: unitreceptor=1
+            integer, parameter,optional :: unitoutgrid=97
+            integer, parameter,optional :: unitoutgridppt=99
+            integer, parameter,optional :: unitoutinfo=1
+            integer, parameter,optional :: unitspecies=1
+            integer, parameter,optional :: unitoutrecept=91
+            integer, parameter,optional :: unitoutreceptppt=92
+            integer, parameter,optional :: unitlsm=1
+            integer, parameter,optional :: unitsurfdata=1
+            integer, parameter,optional :: unitland=1
+            integer, parameter,optional :: unitwesely=1
+            integer, parameter,optional :: unitoh=1
+            integer, parameter,optional :: unitdates=94
+            integer, parameter,optional :: unitheader=90
+            integer, parameter,optional :: unitheader_txt=100
+            integer, parameter,optional :: unitshortpart=95
+            integer, parameter,optional :: unitprecip=101
+            integer, parameter,optional :: unitboundcond=89
+            integer, parameter,optional :: unittmp=101
+            integer, parameter,optional :: icmv=-9999
+        end module par_mod
+    end interface 
+end python module fpcluster_whole
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/
