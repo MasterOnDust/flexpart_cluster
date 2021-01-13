@@ -9,7 +9,7 @@ python module clustering_whole ! in
             real dimension(ntime,n),intent(in),depend(ntime,n) :: zl
             integer, optional,check(shape(xl,1)==n),depend(xl) :: n=shape(xl,1)
             integer, optional,check(shape(xl,0)==ntime),depend(xl) :: ntime=shape(xl,0)
-            integer, optional,check(shape(xclust,1)==ncluster),depend(xclust) :: ncluster=shape(xclust,1)
+            ! integer, optional,check(shape(xclust,1)==ncluster),depend(xclust) :: ncluster=shape(xclust,1)
             integer, optional,intent(in) :: ncluster=5
             real dimension(ntime,ncluster),intent(out),depend(ntime) :: xclust
             real dimension(ntime,ncluster),intent(out),depend(ntime,ncluster) :: yclust
