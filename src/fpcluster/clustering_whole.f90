@@ -19,10 +19,10 @@
 ! along with FLEXPART.  If not, see <http://www.gnu.org/licenses/>.   *
 !**********************************************************************
 
-subroutine clustering_whole(xl,yl,zl,n,ntime,ncluster,xclust,yclust,zclust,fclust,rms, &
-       rmsclust,zrms)
-  !                      i  i  i  i   o      o      o      o     o
-  !   o      o
+subroutine clustering_whole(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms, &
+       rmsclust,zrms, nswitches)
+  !                      i  i  i     i   i      i       o      o      o      o     o     o
+  !       o      o       o
   !*****************************************************************************
   !                                                                            *
   !   This routine clusters the particle position into ncluster custers.       *
@@ -59,12 +59,13 @@ subroutine clustering_whole(xl,yl,zl,n,ntime,ncluster,xclust,yclust,zclust,fclus
   
   
 
-  integer,parameter :: maxpart=100000
   real,parameter :: pi=3.14159265, r_earth=6.371e6, r_air=287.05, ga=9.81
   real,parameter :: cpa=1004.6, kappa=0.286, pi180=pi/180., vonkarman=0.4
-
+  
+  integer :: niters
   integer :: ntime
-  integer :: n,i,j,l,t,nclust(maxpart),ncl,ncluster
+  integer :: nswitches, nswitcheslast
+  integer :: n,i,j,l,t,nclust(n),ncl,ncluster
   integer :: numb(ncluster)
   real :: xl(ntime,n),yl(ntime,n),zl(ntime,n),xclust(ntime,ncluster),yclust(ntime,ncluster),x(ntime),y(ntime),z(ntime)
   real :: zclust(ntime,ncluster),distance2,distances,distancemin,rms,rmsold
@@ -101,30 +102,33 @@ subroutine clustering_whole(xl,yl,zl,n,ntime,ncluster,xclust,yclust,zclust,fclus
 
   ! Iterative loop to compute the cluster means
   !********************************************
-
-  do l=1,100
+  do l=1,niters
 
   ! Assign each particle to a cluster: criterion minimum distance to the
   ! cluster mean position
   !*********************************************************************
 
-
+  nswitches=0
     do i=1,n
       distancemin=10.**10.
       do j=1,ncluster
         distances=0
         do t=1,ntime 
           distances=distances+distance2(yl(t,i),xl(t,i),yclust(t,j),xclust(t,j))
-          if (distances.lt.distancemin) then
-            distancemin=distances
-            ncl=j 
-          endif
         end do
+        if (distances.lt.distancemin) then
+          distancemin=distances
+          ncl=j 
+        endif
+        
       end do
+      if (nclust(i).ne.ncl) then
+        nswitches=nswitches+1
+      endif
       nclust(i)=ncl
     end do
-
-
+  !print *, distancemin
+    
   ! Recalculate the cluster centroid position: convert to 3D Cartesian coordinates,
   ! calculate mean position, and re-project this point onto the Earth's surface
   !*****************************************************************************
@@ -195,9 +199,13 @@ subroutine clustering_whole(xl,yl,zl,n,ntime,ncluster,xclust,yclust,zclust,fclus
 
   ! Leave the loop if the RMS distance decreases only slightly between 2 iterations
   !*****************************************************************************
-
-    if ((l.gt.1).and.(abs(rms-rmsold)/rmsold.lt.0.005)) goto 99
+    !print *, rms
+    !print *, rmsold
+    !if ((l.gt.1).and.(abs(rms-rmsold)/rmsold.lt.0.005)) goto 99
+    print *, nswitches
+    !if ((l.gt.1).and.(abs(nswitches-nswitcheslast)/nswitcheslast.lt.0.05)) goto 99
     rmsold=rms
+    nswitcheslast=nswitches
 
   end do
 

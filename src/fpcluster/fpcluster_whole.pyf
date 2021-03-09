@@ -3,7 +3,7 @@
 
 python module clustering_whole ! in 
     interface  ! in :fpcluster_whole
-        subroutine clustering_whole(xl,yl,zl,n,ntime,ncluster,xclust,yclust,zclust,fclust,rms,rmsclust,zrms) ! in :fpcluster_whole:clustering_whole.f90
+        subroutine clustering_whole(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms,rmsclust,zrms,nswitches) ! in :fpcluster_whole:clustering_whole.f90
             real dimension(ntime,n),intent(in) :: xl
             real dimension(ntime,n),intent(in),depend(ntime,n) :: yl
             real dimension(ntime,n),intent(in),depend(ntime,n) :: zl
@@ -11,6 +11,8 @@ python module clustering_whole ! in
             integer, optional,check(shape(xl,0)==ntime),depend(xl) :: ntime=shape(xl,0)
             ! integer, optional,check(shape(xclust,1)==ncluster),depend(xclust) :: ncluster=shape(xclust,1)
             integer, optional,intent(in) :: ncluster=5
+            integer, optional,intent(in) :: niters=100
+            integer intent(out) :: nswitches
             real dimension(ntime,ncluster),intent(out),depend(ntime) :: xclust
             real dimension(ntime,ncluster),intent(out),depend(ntime,ncluster) :: yclust
             real dimension(ntime,ncluster),intent(out),depend(time,ncluster) :: zclust
