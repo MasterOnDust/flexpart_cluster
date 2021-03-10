@@ -1,0 +1,34 @@
+!    -*- f90 -*-
+! Note: the context of this file is case sensitive.
+
+python module trajectory_clustering ! in 
+    interface  ! in :trajectory_clustering
+        subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms,rmsclust,zrms,iterations) ! in :tractory_clustering.pyf:trajectory_clustering.f90
+            real dimension(ntime,n),intent(in) :: xl
+            real dimension(ntime,n),intent(in),depend(ntime,n) :: yl
+            real dimension(ntime,n),intent(in),depend(ntime,n) :: zl
+            integer, optional,check(shape(xl,1)==n),depend(xl) :: n=shape(xl,1)
+            integer, optional,check(shape(xl,0)==ntime),depend(xl) :: ntime=shape(xl,0)
+            integer, optional,intent(in) :: ncluster=5
+            integer, optional,intent(in) :: niters=100
+            integer intent(out) :: iterations
+            real dimension(ntime,ncluster),intent(out),depend(ntime) :: xclust
+            real dimension(ntime,ncluster),intent(out),depend(ntime,ncluster) :: yclust
+            real dimension(ntime,ncluster),intent(out),depend(time,ncluster) :: zclust
+            real dimension(ncluster),intent(out),depend(ncluster) :: fclust
+            real intent(out):: rms
+            real dimension(ncluster),intent(out),depend(ncluster) :: rmsclust
+            real intent(out):: zrms
+        end subroutine clustering
+        function distance2(rlat1,rlon1,rlat2,rlon2) ! in :trajectory_clustering:trajectory_clustering.f90
+            real :: rlat1
+            real :: rlon1
+            real :: rlat2
+            real :: rlon2
+            real :: distance2
+        end function distance2
+    end interface 
+end python module trajectory_clustering
+
+! This file was auto-generated with f2py (version:2).
+! See http://cens.ioc.ee/projects/f2py2e/

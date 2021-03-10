@@ -19,8 +19,8 @@
 ! along with FLEXPART.  If not, see <http://www.gnu.org/licenses/>.   *
 !**********************************************************************
 
-subroutine clustering_whole(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms, &
-       rmsclust,zrms, nswitches)
+subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms, &
+       rmsclust,zrms, iterations)
   !                      i  i  i     i   i      i       o      o      o      o     o     o
   !       o      o       o
   !*****************************************************************************
@@ -53,8 +53,7 @@ subroutine clustering_whole(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclus
   ! xl,yl,zl        particle positions                                         *
   !                                                                            *
   !*****************************************************************************
-  ! In the R Code  the input ot the distance calculation is a matrix which has one 
-  ! row for time along the trajectory and one column for each trajectory.  
+
   implicit none
   
   
@@ -62,19 +61,17 @@ subroutine clustering_whole(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclus
   real,parameter :: pi=3.14159265, r_earth=6.371e6, r_air=287.05, ga=9.81
   real,parameter :: cpa=1004.6, kappa=0.286, pi180=pi/180., vonkarman=0.4
   
-  integer :: niters
+  integer :: niters, iterations
   integer :: ntime
   integer :: nswitches, nswitcheslast
   integer :: n,i,j,l,t,nclust(n),ncl,ncluster
   integer :: numb(ncluster)
   real :: xl(ntime,n),yl(ntime,n),zl(ntime,n),xclust(ntime,ncluster),yclust(ntime,ncluster),x(ntime),y(ntime),z(ntime)
-  real :: zclust(ntime,ncluster),distance2,distances,distancemin,rms,rmsold
+  real :: zclust(ntime,ncluster),distance2,distances,distancemin,rms
   real :: xav(ntime,ncluster),yav(ntime,ncluster),zav(ntime,ncluster),fclust(ncluster)
   real :: rmsclust(ncluster)
   real :: zdist,zrms
     
-  if (n.lt.ncluster) return
-  rmsold=-5.
 
   ! Convert longitude and latitude from degrees to radians
   !*******************************************************
@@ -102,6 +99,7 @@ subroutine clustering_whole(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclus
 
   ! Iterative loop to compute the cluster means
   !********************************************
+  nswitcheslast=-1
   do l=1,niters
 
   ! Assign each particle to a cluster: criterion minimum distance to the
@@ -197,15 +195,11 @@ subroutine clustering_whole(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclus
     end do
 
 
-  ! Leave the loop if the RMS distance decreases only slightly between 2 iterations
+  ! Leave the loop if there where zero trajectories switching
   !*****************************************************************************
-    !print *, rms
-    !print *, rmsold
-    !if ((l.gt.1).and.(abs(rms-rmsold)/rmsold.lt.0.005)) goto 99
-    print *, nswitches
-    !if ((l.gt.1).and.(abs(nswitches-nswitcheslast)/nswitcheslast.lt.0.05)) goto 99
-    rmsold=rms
+    !if ((l.gt.1).and.(nswitcheslast.eq.0).and.(nswitches.eq.0)) goto 99
     nswitcheslast=nswitches
+    iterations=l
 
   end do
 
@@ -244,7 +238,7 @@ subroutine clustering_whole(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclus
   end do
   if (zrms.gt.0.) zrms=sqrt(zrms/real(n))
 
-end subroutine clustering_whole
+end subroutine clustering
 
 
 function distance2(rlat1,rlon1,rlat2,rlon2)
@@ -275,10 +269,9 @@ function distance2(rlat1,rlon1,rlat2,rlon2)
   !   LANGUAGE: Fortran 90
   !
   !$$$
-
-  use par_mod, only: dp
-
   implicit none
+  integer,parameter :: dp=selected_real_kind(P=15) 
+  
 
   real                    :: rlat1,rlon1,rlat2,rlon2,distance2
   real(kind=dp)           :: clat1,clat2,slat1,slat2,cdlon,crd
