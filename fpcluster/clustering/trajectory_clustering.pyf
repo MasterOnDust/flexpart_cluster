@@ -14,11 +14,12 @@ python module trajectory_clustering ! in
             integer intent(out) :: iterations
             real dimension(ntime,ncluster),intent(out),depend(ntime) :: xclust
             real dimension(ntime,ncluster),intent(out),depend(ntime,ncluster) :: yclust
-            real dimension(ntime,ncluster),intent(out),depend(time,ncluster) :: zclust
+            real dimension(ntime,ncluster),intent(out),depend(ntime,ncluster) :: zclust
             real dimension(ncluster),intent(out),depend(ncluster) :: fclust
             real intent(out):: rms
             real dimension(ncluster),intent(out),depend(ncluster) :: rmsclust
             real intent(out):: zrms
+            !real dimension(ntime,ncluster),intent(out),depend(ntime, ncluster) :: meandistance
         end subroutine clustering
         function distance2(rlat1,rlon1,rlat2,rlon2) ! in :trajectory_clustering:trajectory_clustering.f90
             real :: rlat1

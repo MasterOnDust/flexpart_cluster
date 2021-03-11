@@ -70,7 +70,8 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
   real :: zclust(ntime,ncluster),distance2,distances,distancemin,rms
   real :: xav(ntime,ncluster),yav(ntime,ncluster),zav(ntime,ncluster),fclust(ncluster)
   real :: rmsclust(ncluster)
-  real :: zdist,zrms
+  real :: zdist,zrms,normdist,tempdist
+  !real :: meandistance(ntime)
     
 
   ! Convert longitude and latitude from degrees to radians
@@ -101,6 +102,18 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
   !********************************************
   nswitcheslast=-1
   do l=1,niters
+  
+  !do t=1,ntime
+  !  distances=0
+  !  do j=1,ncluster
+  !    do i=1,n
+  !      distances=distances+distance2(yl(t,i),xl(t,i),yclust(t,j),xclust(t,j))
+  !    end do
+  !  end do
+  !  meandistance(t) = distances/(n*ncluster)
+
+  !end do  
+
 
   ! Assign each particle to a cluster: criterion minimum distance to the
   ! cluster mean position
@@ -112,10 +125,14 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
       do j=1,ncluster
         distances=0
         do t=1,ntime 
-          distances=distances+distance2(yl(t,i),xl(t,i),yclust(t,j),xclust(t,j))
+          tempdist=distance2(yl(t,i),xl(t,i),yclust(t,j),xclust(t,j))
+          distances=distances+tempdist
+   !       normdist=normdist+tempdist/meandistance(t)
         end do
+   !     if (normdist.lt.distancemin) then
         if (distances.lt.distancemin) then
           distancemin=distances
+   !       distancemin=normdist
           ncl=j 
         endif
         
@@ -125,6 +142,7 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
       endif
       nclust(i)=ncl
     end do
+  
   !print *, distancemin
     
   ! Recalculate the cluster centroid position: convert to 3D Cartesian coordinates,
@@ -197,7 +215,7 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
 
   ! Leave the loop if there where zero trajectories switching
   !*****************************************************************************
-    !if ((l.gt.1).and.(nswitcheslast.eq.0).and.(nswitches.eq.0)) goto 99
+    if ((l.gt.1).and.(nswitcheslast.eq.0).and.(nswitches.eq.0)) goto 99
     nswitcheslast=nswitches
     iterations=l
 
