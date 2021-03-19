@@ -105,16 +105,21 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
   do t=1,ntime
     tempdist=0.
     do i=1,n
-      tempdist=tempdist+distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t))
+      !tempdist=tempdist+distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t))
+      tempdist=tempdist+(distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t)))**2
     end do
-    mdist=tempdist/n
-    tempdev=0.
-    do i=1,n
-      tempdev=tempdev+(distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t))-mdist)**2
-    end do
-    stddev(t)=sqrt(tempdev/n)
+    !mdist=tempdist/n
+    !tempdev=0.
+    !do i=1,n
+    !  tempdev=tempdev+(distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t))-mdist)**2
+    !end do
+    stddev(t)=sqrt(tempdist/n)
+    !stddev(t)=sqrt(tempdev/n)
   end do
-
+  
+  do t=1,ntime-1
+    print *, (stddev(t)/stddev(t+1))
+  end do
   ! Generate a seed for each cluster
   !*********************************
 
@@ -150,8 +155,7 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
         if (distances.lt.distancemin) then
           distancemin=distances
           ncl=j 
-        endif
-        
+        endif 
       end do
       if (nclust(i).ne.ncl) then
         nswitches=nswitches+1
