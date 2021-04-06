@@ -3,9 +3,12 @@ from matplotlib.collections import LineCollection
 import cartopy.crs as ccrs
 import numpy as np
 
-def plot_trajectories(ds, figsize=(16,6)):
-    fig, ax = plt.subplots(figsize=figsize, subplot_kw={'projection':ccrs.PlateCarree()})
-    ax.coastlines()
+def plot_trajectories(ds, figsize=(16,6), add_colorbar=False, ax=None, add_labels=False):
+    if ax==None:
+        ax = plt.gca(projection=ccrs.PlateCarree())
+    
+    # fig, ax = plt.subplots(figsize=figsize, subplot_kw={'projection':ccrs.PlateCarree()})
+    # ax.coastlines()
     for cluster in ds.nclust:
         xclust = ds.xclust.sel(nclust=cluster.values)
         yclust = ds.yclust.sel(nclust=cluster.values)
@@ -19,7 +22,9 @@ def plot_trajectories(ds, figsize=(16,6)):
         lc.set_linewidth(2)
 
         line = ax.add_collection(lc)
-        ax.text(xclust[round(len(ds.xclust)/2)].values ,yclust[round(len(xclust)/2)].values, '{:.1f} %'.format(ds.fclust.sel(nclust=cluster.values).values),
+        if add_labels:
+            ax.text(xclust[14].values ,yclust[14].values, '{:.1f} %'.format(ds.fclust.sel(nclust=cluster.values).values),
                 verticalalignment='center', horizontalalignment='center')
-    # ax.legend()
-    fig.colorbar(line,pad=0.02, label='Meters above sea level [m]')
+    if add_colorbar:
+        fig.colorbar(line,pad=0.02, label='Meters above sea level [m]')
+    return line
