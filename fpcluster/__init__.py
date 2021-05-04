@@ -1,3 +1,3 @@
 from .cluster_trajectories import cluster_trajectories
 from .read_trajectories import read_trajectories
-from .plot_trajectories import plot_trajectories
+from .plot_trajectories import plot_cluster_centriod

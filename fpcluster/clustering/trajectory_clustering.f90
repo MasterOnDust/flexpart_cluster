@@ -20,7 +20,7 @@
 !**********************************************************************
 
 subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms, &
-       rmsclust,zrms, iterations)
+       rmsclust,zrms, iterations, nclust)
   !                      i  i  i     i   i      i       o      o      o      o     o     o
   !       o      o       o
   !*****************************************************************************
@@ -70,10 +70,9 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
   real :: zclust(ntime,ncluster),distance2,distances,distancemin,rms
   real :: xav(ntime,ncluster),yav(ntime,ncluster),zav(ntime,ncluster),fclust(ncluster)
   real :: rmsclust(ncluster)
-  real :: zdist,zrms,tempdist,tempdev
+  real :: zdist,zrms,tempdist
   real :: xcenter(ntime),ycenter(ntime)
   real :: stddev(ntime)
-  real :: mdist, rmsold
     
   ! Calculate center of mass trajectory
   !*************************************************
@@ -105,16 +104,9 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
   do t=1,ntime
     tempdist=0.
     do i=1,n
-      !tempdist=tempdist+distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t))
       tempdist=tempdist+(distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t)))**2
     end do
-    !mdist=tempdist/n
-    !tempdev=0.
-    !do i=1,n
-    !  tempdev=tempdev+(distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t))-mdist)**2
-    !end do
     stddev(t)=sqrt(tempdist/n)
-    !stddev(t)=sqrt(tempdev/n)
   end do
   
   do t=1,ntime-1
