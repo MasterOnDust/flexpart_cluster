@@ -65,6 +65,7 @@ def read_trajectories(paths, kind='drydep'):
     lons = np.zeros((n_btime_steps+1,numpoints))
     lats = np.zeros((n_btime_steps+1,numpoints))
     heights = np.zeros((n_btime_steps,numpoints))
+    mean_topo = np.zeros((n_btime_steps,numpoints))
     lons[0,:] = lon0
     lats[0,:] = lat0
 
@@ -72,8 +73,8 @@ def read_trajectories(paths, kind='drydep'):
         lons[i+1,:] = df.loc[df.time==t][['lon']].T
         lats[i+1,:] = df.loc[df.time==t][['lat']].T
         heights[i,:] = df.loc[df.time==t][['height']].T
- 
-    return lons, lats, heights
+        mean_topo[i,:] = df.loc[df.time==t][['mean topography']].T
+    return lons, lats, heights, mean_topo 
 
 
 def load_trajectories(path, nclusters=5, skip_rows=24):
