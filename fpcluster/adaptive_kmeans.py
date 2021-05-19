@@ -1,13 +1,12 @@
-from sklearn.metrics.pairwise import haversine_distances
 from sklearn.cluster import KMeans
 import numpy as np
 from itertools import combinations
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter,AutoMinorLocator
-
+from sklearn.neighbors import DistanceMetric
 class Adaptive_KMeans():
 
-    def __init__(self, lons,lats,height):
+    def __init__(self, lons,lats,height, distance_metric='euclidean'):
         """
         DESCRIPTION:
         ===========
@@ -23,11 +22,23 @@ class Adaptive_KMeans():
         self.lons = lons
         self.lats = lats
         self.height = height
-        trajecs = np.stack([lons[1:,:].T,lats[1:,:].T], axis=-1)
+
+        # if distance_metric == 'euclidean':
+        #     dist = euclidean_distances(lons.T,lats.T)
+        #     # distances are mirrored, only keep upper triangle values
+        #     dist = dist[np.triu_indices(dist.shape[0])]
+        #     # sklearn require data to be of shape 
+        #     self.dist = dist.reshape((-1,1))
+
+        trajecs = np.stack([lons.T,lats.T], axis=-1)
         self.traj = trajecs.reshape((trajecs.shape[0],trajecs.shape[1]*2))
 
+        # self.traj = traj
 
-    def cluster(self,n_init=20,kmax=30):
+    
+
+
+    def cluster(self,n_init=20,kmax=30, weight=None):
         """
         DESCRIPTION:
         ============
@@ -43,34 +54,41 @@ class Adaptive_KMeans():
         self.scores = []
         self.KMeans = {}
         self.kmax = kmax
+        self.distortions = []
+        dist_metric = DistanceMetric.get_metric('haversine')
         score_change = 0
         nums = np.arange(2,kmax+1,1)[::-1]
         for num in nums:
             if num==kmax:
-                km = KMeans(n_clusters=num, n_init=n_init).fit(self.traj)
+                km = KMeans(n_clusters=num, n_init=n_init).fit(self.traj, sample_weight=weight)
                 score_change = km.inertia_
+                self.distortions.append(km.inertia_)
                 km_prev = km
             else:
-                km = KMeans(n_clusters=num,init=cluster_centriod,n_init=1).fit(self.traj)
+                km = KMeans(n_clusters=num,init=cluster_centriod,n_init=1).fit(self.traj, sample_weight=weight)
                 score_change = ((km.inertia_ -km_prev.inertia_)/km_prev.inertia_)*100
                 km_prev= km
+                self.distortions.append(km.inertia_)
                 self.scores.append(score_change)
             cluster_centriod = km.cluster_centers_
             s = cluster_centriod.shape
-            cluster_centriod = cluster_centriod.reshape((s[0],int(s[1]/2),2))
+            cluster_centriod = cluster_centriod.reshape((s[0],int(s[1]/2),2))[:,:,[1,0]]
             nclust = np.arange(0,cluster_centriod.shape[0])
             perm = combinations(nclust,2)
             dist_min=10e10
-            # Find the two clusters that are closest to each other
+            # Find the two clusters that are closest to each other, This also need update
             for pair in perm:
-                dist = haversine_distances(np.radians(cluster_centriod[pair[0]]),np.radians(cluster_centriod[pair[1]])).sum()* 6371000/1000
+                # dist = haversine_distances(np.radians(cluster_centriod[pair[0]]),
+                # np.radians(cluster_centriod[pair[1]])).sum()* 6371000/1000
+                dist = np.diag(dist_metric.pairwise(np.radians(cluster_centriod[pair[0]]),
+                np.radians(cluster_centriod[pair[1]]))*6731).sum()
                 if dist < dist_min:
                     closest_centriods = pair
                     dist_min = dist
             clust = self.traj[np.where((km.labels_==pair[0]) | (km.labels_==pair[1])),:].squeeze()
             clust = clust.reshape((clust.shape[0],int(clust.shape[1]/2),2))
             # calculate center of mass of new merged trajectory.
-            merged_clust = center_of_mass_trajectory(clust[:,:,0].T,clust[:,:,1].T,unit='degrees')
+            merged_clust = center_of_mass_trajectory(clust[:,:,0].T,clust[:,:,1].T)
             
             merged_clust = np.array(merged_clust).reshape((cluster_centriod.shape[1],2))
             nclust = np.delete(nclust,[pair])
@@ -113,8 +131,6 @@ class Adaptive_KMeans():
             trajecs_cluster[f'lons{l}'] = lons
             trajecs_cluster[f'height{l}'] = height
             trajecs_cluster[f'fclust{l}'] = (np.count_nonzero(labels==l)/n_trajecs)*100
-            # clust = clust.reshape((clust.shape[0],int(clust.shape[1]/2),2))
-            # trajecs_cluster[l]=clust
         return trajecs_cluster
 
 
@@ -146,32 +162,25 @@ class Adaptive_KMeans():
         return ccenters[:,:,0],ccenters[:,:,1] ,cheight, fclust
         
                  
-    
-
-            
-        
 
 
 
-
-
-def center_of_mass_trajectory(xl,yl, unit='rad'):
+def center_of_mass_trajectory(xl,yl, weights=None):
     """Calculates the center of mass trajectory for all trajectories"""
 
-    pi180 = np.pi/180
-    xll = np.radians(xl)
-    yll = np.radians(yl)
+    xll = np.deg2rad(xl)
+    yll = np.deg2rad(yl)
     x = np.cos(yll)*np.sin(xll)
     y = -1*np.cos(yll)*np.cos(xll)
     z = np.sin(yll)
-    xav = x.mean(axis=1)
-    yav = y.mean(axis=1)
-    zav = z.mean(axis=1)
+    xav = np.average(x,axis=1, weights=weights)
+    yav = np.average(y,axis=1, weights=weights)
+    zav = np.average(z,axis=1, weights=weights)
     
     xcenter = np.arctan2(xav,-1.*yav)
-    ycenter=np.arctan2(zav,np.sqrt(xav*xav+yav*yav))
-    if unit=='degrees':
-        xcenter=np.deg2rad(xcenter)
-        ycenter=np.deg2rad(xcenter)
+    ycenter = np.arctan2(zav,np.sqrt(xav*xav+yav*yav))
+
+    xcenter = np.rad2deg(xcenter)
+    ycenter = np.rad2deg(ycenter)
 
     return xcenter,ycenter
