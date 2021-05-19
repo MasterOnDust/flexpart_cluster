@@ -3,40 +3,113 @@ from matplotlib.collections import LineCollection
 import cartopy.crs as ccrs
 import cartopy
 import numpy as np
+from matplotlib import collections
+from sklearn.neighbors import DistanceMetric
+import shapely
 
-def plot_cluster_centriod(ds, figsize=(16,6), add_colorbar=False, ax=None, add_labels=False):
+def plot_center_trajectory(lons, lats, height, 
+                            add_colorbar=False, ax=None,p0=None,
+                             add_labels=False, vmin=100, vmax=7000, 
+                             cbar_label='Meters above sea level [m]', extent=[70,30,60,120]):
     """
-    DESCRIPTION:
+    DESCRIPITON:
     ===========
-        Takes in a dataset containing the cluster and trajectories and plots them. 
+        Plot the cluster centriod trajectories:
+
+    ARGS:
+    =====
+        lons : longtidues of center trajectoru
+        lats : latitudes of center trajectory
+        height: height of center trajectory
+
+    KWARGS:
+    =======
+        ax : cartopy geoAxes
+        add_colorbar : boolean, whether to include colorbar or not
+        p0: starting loctation of trajectory [lon0,lat0]
+        vmin,vmax : determine limits of colorbar
+        cbar_label : what label the colorbar should have 
 
     """
 
 
     if ax==None:
         ax = plt.gca(projection=ccrs.PlateCarree())
+        ax.set_extent(extent)
+        ax.add_feature(cartopy.feature.BORDERS, linestyle=':')
     
-    # fig, ax = plt.subplots(figsize=figsize, subplot_kw={'projection':ccrs.PlateCarree()})
-    # ax.coastlines()
-    for cluster in ds.nclust:
-        xclust = ds.xclust.sel(nclust=cluster.values)
-        yclust = ds.yclust.sel(nclust=cluster.values)
-        zclust = ds.zclust.sel(nclust=cluster.values)
-        p =np.array([ds.xclust.sel(nclust=cluster.values) ,ds.yclust.sel(nclust=cluster.values)]).T.reshape(-1,1,2)
+    if isinstance(p0,list) or isinstance(p0, np.ndarray):
+
+        ax.scatter(p0[0],  p0[1], marker='*', s=50, zorder=1200, color='black')
 
 
+    p = np.array((lons,lats)).T.reshape(-1,1,2)
+    segments = np.concatenate([p[:-1], p[1:]], axis=1)
+    lc = LineCollection(segments)
+    lc.set_array(height)
+    lc.set_linewidth(2)
+    lc.set_clim(vmin=vmin, vmax=vmax)
+    line = ax.add_collection(lc)
+
+    if add_colorbar:
+        fig=plt.gcf()
+        fig.colorbar(line,pad=0.02, label=cbar_label)
+    return line
+
+def plot_cluster_centriods(lons, lats, height, 
+                            fclust=None,add_colorbar=False, ax=None,p0=None,
+                             add_labels=False, vmin=100, vmax=7000, 
+                             cbar_label='Meters above sea level [m]', extent=[70,30,60,120]):
+    """
+    DESCRIPITON:
+    ===========
+        Plot the cluster centriod trajectories:
+
+    ARGS:
+    =====
+        lons : longtidues of centriod trajectories
+        lats : latitudes of centriod trajectories
+        height: height of centriod trajectories,
+
+
+    KWARGS:
+    =======
+        flcust : percentage of each trajectory belonging to each cluster
+        ax : cartopy geoAxes
+        add_colorbar : boolean, whether to include colorbar or not
+        p0: starting loctation of trajectory [lon0,lat0]
+        vmin,vmax : determine limits of colorbar
+        cbar_label : what label the colorbar should have 
+
+
+    """
+    
+    if ax==None:
+        ax = plt.gca(projection=ccrs.PlateCarree())
+        ax.set_extent(extent)
+        ax.add_feature(cartopy.feature.BORDERS, linestyle=':')
+    
+    if isinstance(p0,list) or isinstance(p0, np.ndarray):
+
+        ax.scatter(p0[0],  p0[1], marker='*', s=50, zorder=1200, color='black')
+
+    for cluster in range(lons.shape[0]):
+        p = np.array((lons[cluster,:],lats[cluster,:])).T.reshape(-1,1,2)
         segments = np.concatenate([p[:-1], p[1:]], axis=1)
         lc = LineCollection(segments)
-        lc.set_array(zclust.values)
+        lc.set_array(height[cluster,:])
         lc.set_linewidth(2)
-
+        lc.set_clim(vmin=vmin, vmax=vmax)
         line = ax.add_collection(lc)
-        if add_labels:
-            ax.text(xclust[14].values ,yclust[14].values, '{:.1f} %'.format(ds.fclust.sel(nclust=cluster.values).values),
+        if isinstance(fclust, np.ndarray):
+            ax.text(lons[cluster,14] ,lats[cluster,14], '{:.1f} %'.format(fclust[cluster]),
                 verticalalignment='center', horizontalalignment='center')
     if add_colorbar:
-        fig.colorbar(line,pad=0.02, label='Meters above sea level [m]')
+        fig=plt.gcf()
+        fig.colorbar(line,pad=0.02, label=cbar_label)
     return line
+
+
 
 def plot_cluster(lons,lats,height,labels, 
                     ax=None, alpha=.4,
@@ -73,3 +146,78 @@ def plot_cluster(lons,lats,height,labels,
         fig = plt.gcf()
         fig.colorbar(line, ax=ax.tolist())
 
+
+
+
+
+def get_distance_circles(lons,lats, xcenter,ycenter, method='std', weight=None):
+    """
+    DESCRIPTION
+    ===========
+        Calcluate the distance circle, for each point along the centriod trajectory. 
+        The radius of the distance circle could either be the standard deviation 
+        of the distance from the center trajectory, or mean distance from center 
+        trajectory. If the weight argument is provided weighted mean and standard 
+        deviation is used.
+        
+    ARGUMENTS
+    =========
+        lons : numpy.array (n_trajectory_points, n_trajectories) longitudes of all trajectories
+        lats : numpy.array (n_trajectory_points, n_trajectories) latitudes of all trajectories
+        xcenter : numpy.array (n_trajectory_points) longitudes of center trajectory
+        ycenter : numpy.array (n_trajectory_points) lattitudes of center trajectory
+    
+    KWARGS
+    ======
+        method : std/mean, determine what kind of distance circle is calculated.
+        weight : calculated weighted standard deviation / mean
+        
+    OUTPUT
+    ======
+    
+        list of shapely circles 
+    
+    """
+    
+    ct_dist = dist_from_center(lons,lats,xcenter,ycenter)*1000
+
+    m_dist = np.average(ct_dist,weights=weight, axis=1)
+
+    if method == 'std':
+        variance = np.zeros((lons.shape[0]))
+        for i in range(lons.shape[0]):
+            variance[i] = np.average((ct_dist[i,:]-m_dist[i])**2, weights=weight)
+        ct_dist = np.sqrt(variance)
+    elif method == 'mean':
+        ct_dist = m_dist
+    else:
+        raise(ValueError('{} is not a valid method, use either mean or std'.format(method)))
+
+    geoms = []
+    for i in range(lons.shape[0]):
+
+        cp_0 = cartopy.geodesic.Geodesic().circle(xcenter[i],ycenter[i], ct_dist[i], 200)
+        geoms.append(shapely.geometry.Polygon(cp_0))
+    
+    return geoms
+
+def dist_from_center(lons,lats,xcenter,ycenter):
+    """
+    DESCRIPTION
+    ===========
+        Calculates the distance from the center
+    
+    
+    
+    """
+    dist_metric = DistanceMetric.get_metric('haversine')
+    dists = np.zeros_like(lons)
+    center = np.stack((ycenter,xcenter),axis=-1)
+    center = np.deg2rad(center)
+    for i in range(lons.shape[1]):
+        temp_t = np.stack((lats[:,i],lons[:,i]),axis=-1)
+#         dists[:,i] = paired_distances(center,temp_t)
+        temp_t = np.deg2rad(temp_t)
+        dists[:,i] = np.diag(dist_metric.pairwise(center, temp_t))*6731
+    
+    return dists
