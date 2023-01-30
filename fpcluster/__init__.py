@@ -1,3 +1,4 @@
 from .cluster_trajectories import cluster_trajectories
 from .read_trajectories import read_trajectories
-from .plot_trajectories import plot_trajectories
+from .plot_trajectories import plot_cluster_centriods, plot_center_trajectory, get_distance_circles
+from .adaptive_kmeans import Adaptive_KMeans

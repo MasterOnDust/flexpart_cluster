@@ -20,7 +20,7 @@
 !**********************************************************************
 
 subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms, &
-       rmsclust,zrms, iterations)
+       rmsclust,zrms, iterations, nclust)
   !                      i  i  i     i   i      i       o      o      o      o     o     o
   !       o      o       o
   !*****************************************************************************
@@ -70,12 +70,22 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
   real :: zclust(ntime,ncluster),distance2,distances,distancemin,rms
   real :: xav(ntime,ncluster),yav(ntime,ncluster),zav(ntime,ncluster),fclust(ncluster)
   real :: rmsclust(ncluster)
-  real :: zdist,zrms
+  real :: zdist,zrms,tempdist
+  real :: xcenter(ntime),ycenter(ntime)
+  real :: stddev(ntime)
     
+  ! Calculate center of mass trajectory
+  !*************************************************
+  !print *,xl
+  do t=1,ntime
+    call centerofmass(xl(t,:),yl(t,:),n,xcenter(t),ycenter(t))
+  end do
+
+  !print *, xcenter
+
 
   ! Convert longitude and latitude from degrees to radians
   !*******************************************************
-
   do i=1,n
     do t=1,ntime
       nclust(i)=i
@@ -84,7 +94,24 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
     end do
   end do
 
+  do t=1,ntime
+    xcenter(t)=xcenter(t)*pi180
+    ycenter(t)=xcenter(t)*pi180
+  end do
 
+  ! Calculate mean standard deviation from center of mass trajectory
+  !****************************************************
+  do t=1,ntime
+    tempdist=0.
+    do i=1,n
+      tempdist=tempdist+(distance2(yl(t,i),xl(t,i),ycenter(t),xcenter(t)))**2
+    end do
+    stddev(t)=sqrt(tempdist/n)
+  end do
+  
+  do t=1,ntime-1
+    print *, (stddev(t)/stddev(t+1))
+  end do
   ! Generate a seed for each cluster
   !*********************************
 
@@ -102,29 +129,32 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
   nswitcheslast=-1
   do l=1,niters
 
+  
+
   ! Assign each particle to a cluster: criterion minimum distance to the
   ! cluster mean position
   !*********************************************************************
-
+  ! This loop is a bit wrong
   nswitches=0
     do i=1,n
       distancemin=10.**10.
       do j=1,ncluster
-        distances=0
+        distances=0.
         do t=1,ntime 
-          distances=distances+distance2(yl(t,i),xl(t,i),yclust(t,j),xclust(t,j))
+          tempdist=distance2(yl(t,i),xl(t,i),yclust(t,j),xclust(t,j))
+          distances=distances+tempdist/stddev(t)
         end do
         if (distances.lt.distancemin) then
           distancemin=distances
           ncl=j 
-        endif
-        
+        endif 
       end do
       if (nclust(i).ne.ncl) then
         nswitches=nswitches+1
       endif
       nclust(i)=ncl
     end do
+  
   !print *, distancemin
     
   ! Recalculate the cluster centroid position: convert to 3D Cartesian coordinates,
@@ -142,13 +172,13 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
     end do
     rms=0.
     
-
+    
     do i=1,n
       distances=0.
       numb(nclust(i))=numb(nclust(i))+1
       do t=1,ntime
         distances=distances+distance2(yl(t,i),xl(t,i), &
-           yclust(ntime,nclust(i)),xclust(t,nclust(i)))
+           yclust(t,nclust(i)),xclust(t,nclust(i)))
       end do
   ! rms is the total rms of all particles
   ! rmsclust is the rms for a particular cluster
@@ -197,7 +227,10 @@ subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclu
 
   ! Leave the loop if there where zero trajectories switching
   !*****************************************************************************
-    !if ((l.gt.1).and.(nswitcheslast.eq.0).and.(nswitches.eq.0)) goto 99
+    if ((l.gt.1).and.(nswitcheslast.eq.0).and.(nswitches.eq.0)) goto 99
+    !if ((l.gt.1).and.(abs(rms-rmsold)/rmsold.lt.0.005)) goto 99
+    !rmsold=rms
+
     nswitcheslast=nswitches
     iterations=l
 

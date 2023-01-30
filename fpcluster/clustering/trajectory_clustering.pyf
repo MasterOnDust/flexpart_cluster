@@ -3,7 +3,7 @@
 
 python module trajectory_clustering ! in 
     interface  ! in :trajectory_clustering
-        subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms,rmsclust,zrms,iterations) ! in :tractory_clustering.pyf:trajectory_clustering.f90
+        subroutine clustering(xl,yl,zl,n,niters,ntime,ncluster,xclust,yclust,zclust,fclust,rms,rmsclust,zrms,iterations, nclust) ! in :trajectory_clustering:trajectory_clustering.f90
             real dimension(ntime,n),intent(in) :: xl
             real dimension(ntime,n),intent(in),depend(ntime,n) :: yl
             real dimension(ntime,n),intent(in),depend(ntime,n) :: zl
@@ -14,11 +14,13 @@ python module trajectory_clustering ! in
             integer intent(out) :: iterations
             real dimension(ntime,ncluster),intent(out),depend(ntime) :: xclust
             real dimension(ntime,ncluster),intent(out),depend(ntime,ncluster) :: yclust
-            real dimension(ntime,ncluster),intent(out),depend(time,ncluster) :: zclust
+            real dimension(ntime,ncluster),intent(out),depend(ntime,ncluster) :: zclust
             real dimension(ncluster),intent(out),depend(ncluster) :: fclust
             real intent(out):: rms
             real dimension(ncluster),intent(out),depend(ncluster) :: rmsclust
             real intent(out):: zrms
+            integer dimension(n),intent(out),depend(n) :: nclust
+            !real dimension(ntime,ncluster),intent(out),depend(ntime, ncluster) :: meandistance
         end subroutine clustering
         function distance2(rlat1,rlon1,rlat2,rlon2) ! in :trajectory_clustering:trajectory_clustering.f90
             real :: rlat1
@@ -27,6 +29,13 @@ python module trajectory_clustering ! in
             real :: rlon2
             real :: distance2
         end function distance2
+        subroutine centerofmass(xl,yl,n,xcenter,ycenter) ! in :trajectory_clustering:centerofmass.f90
+            real dimension(n) :: xl
+            real dimension(n),depend(n) :: yl
+            integer, optional,check(len(xl)>=n),depend(xl) :: n=len(xl)
+            real :: xcenter
+            real :: ycenter
+        end subroutine centerofmass
     end interface 
 end python module trajectory_clustering
 

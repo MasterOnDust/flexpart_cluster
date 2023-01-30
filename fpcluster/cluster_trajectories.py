@@ -32,7 +32,7 @@ def cluster_trajectories(lons, lats, heights, nclust=5, max_iters=100):
     
     """
     
-    x_clust, y_clust, z_clust, fclust,rms ,rmsclust, zrms, niters = clustering(lons,
+    x_clust, y_clust, z_clust, fclust,rms ,rmsclust, zrms, niters, cluster_group = clustering(lons,
                                                                   lats,heights,ncluster=nclust, niters=max_iters)
     ds =xr.Dataset()
     ds = ds.assign_coords(nclust=[i for i in range(1,nclust+1)])
@@ -61,6 +61,9 @@ def cluster_trajectories(lons, lats, heights, nclust=5, max_iters=100):
     ds['zrms'] = zrms
     ds['zrms'].attrs['long_name'] = 'total vertical rms distance after clustering' 
     ds['zrms'].attrs['units'] = 'm'
+
+    ds['assigned_clusters'] = cluster_group
+    
     ds.attrs['title'] = 'Centriod cluster trajectories'
     ds.attrs['source'] =  ("""Dorling, S.R., Davies, T.D. and Pierce, C.E. (1992): 
     Cluster analysis: a technique for estimating the synoptic meteorological 
