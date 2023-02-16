@@ -4,7 +4,8 @@ from setuptools import find_packages
 
 ext1 = Extension(name='fpcluster.trajectory_clustering', 
             sources=['fpcluster/clustering/trajectory_clustering.pyf', 'fpcluster/clustering/trajectory_clustering.f90', 
-                    'fpcluster/clustering/centerofmass.f90'])
+                    'fpcluster/clustering/centerofmass.f90'],
+                    extra_compile_args=['-std=c99'])
 
 if __name__ =="__main__":
     from numpy.distutils.core import setup
@@ -15,4 +16,4 @@ if __name__ =="__main__":
     author ="Ove Haugvaldstad",
     author_email='ovehaugv@outlook.com',
     packages=find_packages(),
-    ext_modules = [ext1])
+    ext_modules = [ext1],)

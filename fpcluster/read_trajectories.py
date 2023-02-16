@@ -59,33 +59,41 @@ def read_trajectories(paths, kind='drydep', timestamps=None):
     df = pd.concat(trajectories)
     if isinstance(timestamps, np.ndarray) or isinstance(timestamps, list):
         df = df[df['t0'].isin(timestamps)]
-    
-
-
-    if kind == 'drydep' or kind == 'conc':
-        btime_steps= df.time.loc[df.time < 0].unique()
-    else: 
+    df= df.loc[df.time < 0]
+    if kind == 'wetdep': 
         btime_steps= df.time.loc[df.time < 0].unique()[1:]
+        
+        df = df.loc[df.time <= btime_steps[0]]
+    else:
+        btime_steps= df.time.loc[df.time < 0].unique()
 
-
-    
-    numpoints = len(df.loc[df.time == btime_steps[5]])
+    if npoints:
+        numpoints=npoints
+    else:
+        numpoints = len(df.loc[df.time == btime_steps[5]])
+        # numpoints=nps
     n_btime_steps = len(btime_steps)
-    lons = np.zeros((n_btime_steps,numpoints))
-    lats = np.zeros((n_btime_steps,numpoints))
-    heights = np.zeros((n_btime_steps,numpoints))
-    mean_topo = np.zeros((n_btime_steps,numpoints))
-
+    lons = np.full((n_btime_steps,numpoints), -999)
+    lats = np.full_like(lons, -999)
+    heights = np.full_like(lats,-999)
+    mean_topo = np.full_like(lats,-999)
     for i,t in enumerate(btime_steps):
-        lons[i,:] = df.loc[df.time==t][['lon']].T
-        lats[i,:] = df.loc[df.time==t][['lat']].T
-        heights[i,:] = df.loc[df.time==t][['height']].T
-        mean_topo[i,:] = df.loc[df.time==t][['mean topography']].T
+        if df.loc[df.time==t][['lon']].T.shape[1] < numpoints:
+            for j in range(len(df.loc[df.time==t][['lon']])):
+                lons[i,j] = df.loc[df.time==t][['lon']].T.iloc[0,j]
+                lats[i,j] = df.loc[df.time==t][['lat']].T.iloc[0,j]
+                heights[i,j] = df.loc[df.time==t][['height']].T.iloc[0,j]
+                mean_topo[i,j] = df.loc[df.time==t][['mean topography']].T.iloc[0,j]
+        else:
+            lons[i,:] = df.loc[df.time==t][['lon']].T
+            lats[i,:] = df.loc[df.time==t][['lat']].T
+            heights[i,:] = df.loc[df.time==t][['height']].T
+            mean_topo[i,:] = df.loc[df.time==t][['mean topography']].T
     out_ds = xr.Dataset(
-        data_vars=dict(lons=(['btime','time'],lons, {'units':'degrees east'}),
-                        lats=(['btime','time'],lats,{'units':'degrees north'}),
-                        height=(['btime','time'],heights, {'units':'m','long_name': 'mean centriod cluster height above sea level'}),
-                        mean_topo=(['btime','time'],mean_topo, {'units': 'm', 'long_name': 'mean topography height below cluster'})),
+        data_vars=dict(lons=(['btime','time'],lons, {'units':'degrees east','missing_value':-999}),
+                        lats=(['btime','time'],lats,{'units':'degrees north','missing_value':-999}),
+                        height=(['btime','time'],heights, {'units':'m','long_name': 'mean centriod cluster height above sea level','missing_value':-999}),
+                        mean_topo=(['btime','time'],mean_topo, {'units': 'm', 'long_name': 'mean topography height below cluster','missing_value':-999})),
         coords=dict(
             time=df['t0'].unique(),
             btime=(['btime'], btime_steps,{'units': 's', 'long_name':'seconds along backward trajectory'})
