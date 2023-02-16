@@ -56,7 +56,9 @@ def read_trajectories(paths, kind='drydep', timestamps=None):
             df = df[~df['t0'].isin(trajectories[i-1]['t0'])]
         trajectories.append(df)
     lon0, lat0 =  float(locations.iloc[0,1]), float(locations.iloc[0,2])
+
     df = pd.concat(trajectories)
+    df = df.drop('location', axis=1)
     if isinstance(timestamps, np.ndarray) or isinstance(timestamps, list):
         df = df[df['t0'].isin(timestamps)]
     df= df.loc[df.time < 0]
@@ -67,10 +69,7 @@ def read_trajectories(paths, kind='drydep', timestamps=None):
     else:
         btime_steps= df.time.loc[df.time < 0].unique()
 
-    if npoints:
-        numpoints=npoints
-    else:
-        numpoints = len(df.loc[df.time == btime_steps[5]])
+    numpoints = len(df.loc[df.time == btime_steps[5]])
         # numpoints=nps
     n_btime_steps = len(btime_steps)
     lons = np.full((n_btime_steps,numpoints), -999)
@@ -79,16 +78,25 @@ def read_trajectories(paths, kind='drydep', timestamps=None):
     mean_topo = np.full_like(lats,-999)
     for i,t in enumerate(btime_steps):
         if df.loc[df.time==t][['lon']].T.shape[1] < numpoints:
+            tlons =  df.loc[df.time==t][['lon']].T.iloc[0,:].values
+            tlats =  df.loc[df.time==t][['lat']].T.iloc[0,:].values
+            theights=df.loc[df.time==t][['height']].T.iloc[0,:].values
+            tmean_topo=df.loc[df.time==t][['mean topography']].T.iloc[0,:].values
+
+            # import IPython; IPython.embed()
             for j in range(len(df.loc[df.time==t][['lon']])):
-                lons[i,j] = df.loc[df.time==t][['lon']].T.iloc[0,j]
-                lats[i,j] = df.loc[df.time==t][['lat']].T.iloc[0,j]
-                heights[i,j] = df.loc[df.time==t][['height']].T.iloc[0,j]
-                mean_topo[i,j] = df.loc[df.time==t][['mean topography']].T.iloc[0,j]
+                
+                lons[i,j] = tlons[j]
+                lats[i,j] = tlats[j]
+                heights[i,j] = theights[j]
+                mean_topo[i,j] = tmean_topo[j]
         else:
             lons[i,:] = df.loc[df.time==t][['lon']].T
             lats[i,:] = df.loc[df.time==t][['lat']].T
             heights[i,:] = df.loc[df.time==t][['height']].T
             mean_topo[i,:] = df.loc[df.time==t][['mean topography']].T
+        
+    print('creating ds')
     out_ds = xr.Dataset(
         data_vars=dict(lons=(['btime','time'],lons, {'units':'degrees east','missing_value':-999}),
                         lats=(['btime','time'],lats,{'units':'degrees north','missing_value':-999}),
@@ -102,7 +110,7 @@ def read_trajectories(paths, kind='drydep', timestamps=None):
                     lon0=lon0,
                     lat0=lat0)
     )
-
+    print('create_ds done')
     return out_ds
 
 
