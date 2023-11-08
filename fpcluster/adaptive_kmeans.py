@@ -1,9 +1,13 @@
-from sklearn.cluster import KMeans
+
 import numpy as np
 from itertools import combinations
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter,AutoMinorLocator
-from sklearn.neighbors import DistanceMetric
+try:
+    from sklearn.neighbors import DistanceMetric
+    from sklearn.cluster import KMeans
+except ImportError:
+    print('Adaptive_Kmeans does not work without sklearn')
 class Adaptive_KMeans():
 
     def __init__(self, lons,lats,height, distance_metric='euclidean'):

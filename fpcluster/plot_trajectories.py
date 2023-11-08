@@ -4,7 +4,10 @@ import cartopy.crs as ccrs
 import cartopy
 import numpy as np
 from matplotlib import collections
-from sklearn.neighbors import DistanceMetric
+try:
+    from sklearn.neighbors import DistanceMetric
+except ImportError:
+    print('Adaptive_Kmeans does not work without sklearn')
 import shapely
 
 def plot_center_trajectory(lons, lats, height, 
