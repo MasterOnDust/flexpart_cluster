@@ -13,7 +13,8 @@ import shapely
 def plot_center_trajectory(lons, lats, height, 
                             add_colorbar=False, ax=None,p0=None,
                              add_labels=False, vmin=100, vmax=7000, 
-                             cbar_label='Meters above sea level [m]', extent=[70,30,60,120]):
+                             cbar_label='Meters above sea level [m]', extent=[70,30,60,120],
+                          receptor_marker_color='black', join_trajec_to_receptor=False):
     """
     DESCRIPITON:
     ===========
@@ -40,16 +41,33 @@ def plot_center_trajectory(lons, lats, height,
         ax = plt.gca(projection=ccrs.PlateCarree())
         ax.set_extent(extent)
         ax.add_feature(cartopy.feature.BORDERS, linestyle=':')
+
+
     
     if isinstance(p0,list) or isinstance(p0, np.ndarray):
 
-        ax.scatter(p0[0],  p0[1], marker='*', s=50, zorder=1200, color='black')
-
-
-    p = np.array((lons,lats)).T.reshape(-1,1,2)
+        ax.scatter(p0[0],  p0[1], marker='*', s=75, zorder=1200, facecolor=receptor_marker_color, linewidth=.8, edgecolor='black')
+    if join_trajec_to_receptor:
+        lons_array = np.zeros(len(lons)+1)
+        lats_array = np.zeros(len(lats)+1)
+        height_array = np.zeros(len(height)+1)
+        lons_array[0] = p0[0]
+        lats_array[0] = p0[1]
+        lons_array[1:] = lons[:]
+        lats_array[1:] = lats[:]
+        height_array[0] = height[0]
+        height_array[1:] = height[:]
+        
+    else:
+        lons_array = lons
+        lats_array = lats
+        height_array = height
+        
+    # print(lons_array[0],lons[0])
+    p = np.array((lons_array,lats_array)).T.reshape(-1,1,2)
     segments = np.concatenate([p[:-1], p[1:]], axis=1)
     lc = LineCollection(segments)
-    lc.set_array(height)
+    lc.set_array(height_array)
     lc.set_linewidth(2)
     lc.set_clim(vmin=vmin, vmax=vmax)
     line = ax.add_collection(lc)
@@ -62,7 +80,8 @@ def plot_center_trajectory(lons, lats, height,
 def plot_cluster_centriods(lons, lats, height, 
                             fclust=None,add_colorbar=False, ax=None,p0=None,
                              add_labels=False, vmin=100, vmax=7000, 
-                             cbar_label='Meters above sea level [m]', extent=[70,30,60,120]):
+                             cbar_label='Meters above sea level [m]', extent=[70,30,60,120],
+                           receptor_marker_color='black'):
     """
     DESCRIPITON:
     ===========
@@ -94,7 +113,7 @@ def plot_cluster_centriods(lons, lats, height,
     
     if isinstance(p0,list) or isinstance(p0, np.ndarray):
 
-        ax.scatter(p0[0],  p0[1], marker='*', s=50, zorder=1200, color='black')
+        ax.scatter(p0[0],  p0[1], marker='*', s=50, zorder=1200, color=receptor_marker_color)
 
     for cluster in range(lons.shape[0]):
         p = np.array((lons[cluster,:],lats[cluster,:])).T.reshape(-1,1,2)
