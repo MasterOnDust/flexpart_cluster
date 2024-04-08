@@ -4,7 +4,7 @@ from itertools import combinations
 import matplotlib.pyplot as plt
 from matplotlib.ticker import ScalarFormatter,AutoMinorLocator
 try:
-    from sklearn.neighbors import DistanceMetric
+    from sklearn.metrics import DistanceMetric
     from sklearn.cluster import KMeans
 except ImportError:
     print('Adaptive_Kmeans does not work without sklearn')
