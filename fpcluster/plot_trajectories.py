@@ -14,7 +14,8 @@ def plot_center_trajectory(lons, lats, height,
                             add_colorbar=False, ax=None,p0=None,
                              add_labels=False, vmin=100, vmax=7000, 
                              cbar_label='Meters above sea level [m]', extent=[70,30,60,120],
-                          receptor_marker_color='black', join_trajec_to_receptor=False):
+                          receptor_marker_color='black', join_trajec_to_receptor=False,
+                          cmap=None, norm=None):
     """
     DESCRIPITON:
     ===========
@@ -69,7 +70,12 @@ def plot_center_trajectory(lons, lats, height,
     lc = LineCollection(segments)
     lc.set_array(height_array)
     lc.set_linewidth(2)
-    lc.set_clim(vmin=vmin, vmax=vmax)
+    if norm:
+        lc.set_norm(norm)
+    else:
+        lc.set_clim(vmin=vmin, vmax=vmax)
+    if cmap:
+        lc.set_cmap(cmap)
     line = ax.add_collection(lc)
 
     if add_colorbar:
