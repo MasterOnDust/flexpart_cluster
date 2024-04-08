@@ -5,7 +5,7 @@ import cartopy
 import numpy as np
 from matplotlib import collections
 try:
-    from sklearn.neighbors import DistanceMetric
+    from sklearn.metrics import DistanceMetric
 except ImportError:
     print('Adaptive_Kmeans does not work without sklearn')
 import shapely
